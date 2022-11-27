@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Play a sine signal."""
-import sys
+import sys, tty, termios
 
 import numpy as np
 import sounddevice as sd
@@ -8,7 +8,10 @@ import sounddevice as sd
 device = 1
 start_idx = 0
 amplitude = 0.2
-frequency = 400
+frequency = 440
+
+filedescriptors = termios. tcgetattr(sys. stdin)
+tty. setcbreak(sys. stdin)
 
 samplerate = sd.query_devices(device, 'output')['default_samplerate']
 
@@ -26,4 +29,34 @@ with sd.OutputStream(device=device, channels=1, callback=callback,
 	print('#' * 80)
 	print('press Return to quit')
 	print('#' * 80)
-	input()
+
+
+	while True:
+		print('Enter a single character: ')
+		user_input = sys.stdin.read(1)[0]
+
+		if len(user_input) == 1:
+			match user_input:
+				case 'a':
+					frequency = 440
+				case 's':
+					frequency = 500
+				case 'd':
+					frequency = 560
+				case 'f':
+					frequency = 600
+				case 'g':
+					frequency = 680
+				case 'h':
+					frequency = 760
+				case 'j':
+					frequency = 840
+				case 'k':
+					frequency = 880
+
+		elif user_input == '':
+			break
+
+		else:
+			print('Enter a single character to continue.')
+			continue
