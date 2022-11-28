@@ -30,7 +30,7 @@ def callback(outdata, frames, time, status):
 	t = (start_idx + np.arange(frames)) / samplerate
 	t = t.reshape(-1, 1)
 
-	outdata[:] = amplitude * np.cos(3 * 30 * frequency * t)
+	outdata[:] = amplitude * np.sin(3 * 30 * frequency * t)
 	start_idx += frames
 
 with sd.OutputStream(device=device, channels=1, callback=callback,
