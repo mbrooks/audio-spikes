@@ -19,18 +19,54 @@ tty.setcbreak(sys.stdin)
 
 samplerate = sd.query_devices(device, 'output')['default_samplerate']
 
+class Note():
+	def __init__(self, frequency) -> None:
+		self.amplitude = 0.5
+		self.frequency = frequency
+
+	def get(self):
+		return [self.amplitude, self.frequency]
+
+def decayAmplitude(note):
+	decay = 0.97
+	amplitude = note[0] * decay
+	return [amplitude, note[1]]
+
+def filterNote(note):
+	amplitude = note[0] * decay
+	if amplitude < 0.0001:
+		return False
+	return True
+
+class NoteCollection():
+	def __init__(self):
+		self.notes = []
+		self.default_amplitude = 0.5
+
+	def add(self, frequency):
+		self.notes.append([default_amplitude, frequency])
+
+	def getAll(self):
+		self.notes = list(filter(filterNote, map(lambda note: decayAmplitude(note), self.notes)))
+		return self.notes
+
+notecollection = NoteCollection()
+
+
 def callback(outdata, frames, time, status):
 	if status:
 		print(status, file=sys.stderr)
-	global start_idx, amplitude
 
-	# decay amplitude
-	amplitude = amplitude * decay
-
+	global start_idx, amplitude, notecollection
+	notes = notecollection.getAll()
 	t = (start_idx + np.arange(frames)) / samplerate
 	t = t.reshape(-1, 1)
 
-	outdata[:] = amplitude * np.sin(3 * 30 * frequency * t)
+	out = float()
+	for note in notes:
+		out = out + (note[0] * np.sin(3 * 30 * note[1] * t))
+
+	outdata[:] = out
 	start_idx += frames
 
 with sd.OutputStream(device=device, channels=1, callback=callback,
@@ -49,28 +85,23 @@ with sd.OutputStream(device=device, channels=1, callback=callback,
 			break
 
 		if len(user_input) == 1:
+			note = None
 			match user_input:
 				case 'a':
-					amplitude = default_amplitude
-					frequency = 16.35
+					note = 16.35
 				case 's':
-					amplitude = default_amplitude
-					frequency = 18.35
+					note = 18.35
 				case 'd':
-					amplitude = default_amplitude
-					frequency = 20.60
+					note = 20.60
 				case 'f':
-					amplitude = default_amplitude
-					frequency = 21.83
+					note = 21.83
 				case 'g':
-					amplitude = default_amplitude
-					frequency = 24.50
+					note = 24.50
 				case 'h':
-					amplitude = default_amplitude
-					frequency = 27.50
+					note = 27.50
 				case 'j':
-					amplitude = default_amplitude
-					frequency = 30.87
+					note = 30.87
 				case 'k':
-					amplitude = default_amplitude
-					frequency = 16.35 * 2
+					note = 16.35 * 2
+			if note:
+				notecollection.add(note)
