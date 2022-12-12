@@ -14,6 +14,8 @@ default_amplitude = 0.5
 
 decay = 0.97
 
+ADD_ECHO = True
+
 filedescriptors = termios. tcgetattr(sys.stdin)
 tty.setcbreak(sys.stdin)
 
@@ -38,6 +40,18 @@ def filterNote(note):
 		return False
 	return True
 
+class Delay():
+	def __init__(self):
+		self.delayArray1 = [np.zeros([512, 1])] * 10
+		self.delayArray2 = [np.zeros([512, 1])] * 13
+
+	def process(self, input):
+		self.delayArray1.append(input)
+		self.delayArray2.append(input)
+		one = self.delayArray1.pop(0) * .80
+		two = self.delayArray2.pop(0) * .75
+		return one + two
+
 class NoteCollection():
 	def __init__(self):
 		self.notes = []
@@ -51,7 +65,7 @@ class NoteCollection():
 		return self.notes
 
 notecollection = NoteCollection()
-
+delay = Delay()
 
 def callback(outdata, frames, time, status):
 	if status:
@@ -62,9 +76,12 @@ def callback(outdata, frames, time, status):
 	t = (start_idx + np.arange(frames)) / samplerate
 	t = t.reshape(-1, 1)
 
-	out = float()
+	out = np.empty([512, 1])
 	for note in notes:
 		out = out + (note[0] * np.sin(3 * 30 * note[1] * t))
+
+	if ADD_ECHO:
+		out = out + delay.process(out)
 
 	outdata[:] = out
 	start_idx += frames
